@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    name: Build & test (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ["18.17", "20", "22"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node ${{ matrix.node }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # The end-to-end baseline (tests/integration.test.ts) drives the fixture's
+      # OWN vitest for coverage, so the fixture needs its dependencies installed.
+      - name: Install fixture dependencies
+        run: npm --prefix sample-apps/todo-list ci
+
+      - name: Build
+        run: npm run build
+
+      # Runs the full suite AND enforces the 100% coverage thresholds declared
+      # in vitest.config.ts — a drop in coverage fails the job.
+      - name: Test (with coverage gate)
+        run: npm run test:coverage
+
+      # Full dogfood: slopguard drives our own vitest for real coverage and
+      # asserts no method exceeds the threshold. Exit 2 (from --fail-over) fails
+      # the step. (--no-coverage would assume 0% and inflate every score, so the
+      # threshold gate is only meaningful with real coverage.)
+      - name: Dogfood — analyze our own sources
+        run: node dist/cli/main.js analyze --path src --threshold 30 --fail-over 30 --json > slopguard-self.json
+
+      # The fixture is deliberately tiny, fully covered, low-complexity. Its
+      # report is a fixed baseline — drift here is a regression in the analyzer
+      # itself (see README "Development").
+      - name: End-to-end baseline — sample-apps/todo-list
+        run: |
+          node dist/cli/main.js analyze --path sample-apps/todo-list/src --json > todolist-baseline.json
+          jq -e '
+            .coverageAvailable == true
+            and .summary.fileCount == 3
+            and .summary.methodCount == 8
+            and .summary.crappyMethodCount == 0
+            and .summary.crappyTypeCount == 0
+            and .summary.weightedCoverage > 95
+          ' todolist-baseline.json
+
+      - name: Upload self-analysis
+        if: matrix.node == '20'
+        uses: actions/upload-artifact@v4
+        with:
+          name: slopguard-self-analysis
+          path: |
+            slopguard-self.json
+            todolist-baseline.json
+          if-no-files-found: error
