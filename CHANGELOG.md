@@ -6,6 +6,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- A symlinked CLI (the normal case for `npm link` and global installs) ran
+  nothing and exited silently. The entry-point guard compared `import.meta.url`
+  (symlinks resolved by Node) against `process.argv[1]` (the symlink path), so
+  the two never matched and `main()` was never dispatched. `argv[1]` is now
+  canonicalised with `realpathSync` before comparison. Covered by a subprocess
+  regression test that invokes the binary through a symlink.
+
 ### Security
 
 - Raised the dev toolchain to clear all `npm audit` advisories (was 6, incl. 2
