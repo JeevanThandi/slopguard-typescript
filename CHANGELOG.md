@@ -6,6 +6,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Security
+
+- Raised the dev toolchain to clear all `npm audit` advisories (was 6, incl. 2
+  critical; now 0): vitest/`@vitest/coverage-v8` `^2` → `^3`, plus an `esbuild`
+  `^0.28.1` override to pull a patched transitive. All were **dev-only** and
+  unreachable in this project's headless usage; nothing shipped in the package
+  was affected (runtime deps remain `typescript` + `commander`, zero transitive,
+  zero advisories). Node 18.17 support and the 100% coverage gate are retained.
+
 ## [0.1.0] — 2026-06-17
 
 Initial public release. The TypeScript/JavaScript sibling of
