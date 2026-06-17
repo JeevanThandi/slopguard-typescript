@@ -1,0 +1,60 @@
+{
+  "name": "slopguard-typescript",
+  "version": "0.1.0",
+  "description": "CRAP (Change Risk Anti-Patterns) guardrail for TypeScript / JavaScript.",
+  "keywords": [
+    "crap",
+    "code-quality",
+    "complexity",
+    "cyclomatic-complexity",
+    "cognitive-complexity",
+    "coverage",
+    "static-analysis",
+    "typescript",
+    "javascript",
+    "cli",
+    "vitest",
+    "jest"
+  ],
+  "homepage": "https://github.com/JeevanThandi/slopguard-typescript#readme",
+  "bugs": {
+    "url": "https://github.com/JeevanThandi/slopguard-typescript/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JeevanThandi/slopguard-typescript.git"
+  },
+  "author": "Jeevan Thandi <jeevanthandi@googlemail.com>",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=18.17"
+  },
+  "bin": {
+    "slopguard-ts": "dist/cli/main.js"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "pretest": "npm run build",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "dogfood": "npm run build && node dist/cli/main.js analyze --path src",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "commander": "^12.1.0",
+    "typescript": "^5.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@vitest/coverage-v8": "^2.1.0",
+    "vitest": "^2.1.0"
+  }
+}
