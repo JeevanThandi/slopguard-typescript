@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { realpathSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import { Command } from "commander";
 import { SlopguardVersion } from "../core/version.js";
@@ -53,7 +54,19 @@ export async function main(argv: string[], program: Command = buildProgram()): P
 
 // Dispatch only when run as the CLI binary, so importing this module (e.g. in
 // tests, to exercise buildProgram/main in-process) doesn't kick off a parse.
-const invokedAsBinary =
-  process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href;
-/* v8 ignore next -- entry dispatch; exercised by the CLI subprocess integration tests, invisible to in-process coverage */
-if (invokedAsBinary) main(process.argv);
+// We must resolve symlinks on argv[1] before comparing: `npm link` and global
+// installs run the CLI through a symlink, but Node resolves symlinks in
+// import.meta.url, so the two only match once argv[1] is canonicalised too.
+// Without realpathSync, a symlinked `slopguard-ts` parses nothing and exits
+// silently.
+/* v8 ignore start -- entry dispatch; exercised by the CLI subprocess integration tests, invisible to in-process coverage */
+function invokedAsBinary(): boolean {
+  if (process.argv[1] === undefined) return false;
+  try {
+    return import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href;
+  } catch {
+    return false;
+  }
+}
+if (invokedAsBinary()) main(process.argv);
+/* v8 ignore stop */

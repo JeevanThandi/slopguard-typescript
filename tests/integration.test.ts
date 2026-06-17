@@ -1,5 +1,6 @@
 import { execFile } from "node:child_process";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
@@ -98,6 +99,22 @@ describe("CLI end-to-end", () => {
   it.skipIf(!fs.existsSync(cli))("prints version metadata as JSON", async () => {
     const { stdout } = await exec(process.execPath, [cli, "version"]);
     expect(JSON.parse(stdout)).toEqual({ name: "slopguard-typescript", version: "0.1.0" });
+  });
+
+  // Regression: `npm link` / global installs invoke the CLI through a symlink.
+  // Node resolves symlinks in import.meta.url, so the entry-point guard must
+  // canonicalise argv[1] too — otherwise a symlinked binary parses nothing and
+  // exits silently (https://github.com/JeevanThandi/slopguard-typescript bug).
+  it.skipIf(!fs.existsSync(cli))("runs when invoked through a symlink (npm link)", async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "slopguard-link-"));
+    const link = path.join(dir, "slopguard-ts");
+    try {
+      fs.symlinkSync(cli, link);
+      const { stdout } = await exec(process.execPath, [link, "version"]);
+      expect(JSON.parse(stdout)).toEqual({ name: "slopguard-typescript", version: "0.1.0" });
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   it.skipIf(!fs.existsSync(cli))("rejects an unsupported --runner", async () => {
