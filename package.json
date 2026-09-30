@@ -1,6 +1,6 @@
 {
   "name": "slopguard-typescript",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "CRAP (Change Risk Anti-Patterns) guardrail for TypeScript / JavaScript.",
   "keywords": [
     "crap",

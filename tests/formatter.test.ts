@@ -32,7 +32,7 @@ function sampleReport(coverage: boolean) {
 describe("prettyReport", () => {
   it("renders header, summary, and the ranked table", () => {
     const out = prettyReport(sampleReport(false));
-    expect(out).toContain("slopguard-typescript 0.1.0 — schema 2");
+    expect(out).toContain("slopguard-typescript 0.2.0 — schema 2");
     expect(out).toContain("source:    /proj");
     expect(out).toContain("coverage:  (none — coverage assumed 0%)");
     expect(out).toContain("threshold: 30.0");

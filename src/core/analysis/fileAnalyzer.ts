@@ -50,18 +50,21 @@ export class FileAnalyzer {
    * already has the source in memory.
    */
   analyzeSource(source: string, reportedPath: string): FileReport {
-    const scriptKind = scriptKindFor(reportedPath) ?? ts.ScriptKind.TS;
-    // setParentNodes=true: the visitor relies on .parent for else-if chain
-    // detection, boolean-run collapse, and binding-name resolution.
-    const sourceFile = ts.createSourceFile(
-      reportedPath,
-      source,
-      ts.ScriptTarget.Latest,
-      /* setParentNodes */ true,
-      scriptKind
-    );
+    return this.analyzeSourceFile(parseSourceFile(source, reportedPath), reportedPath);
+  }
+
+  /** Analyze an already-parsed file. `mutate` parses once and reuses the tree. */
+  analyzeSourceFile(sourceFile: ts.SourceFile, reportedPath: string): FileReport {
     const visitor = new ComplexityVisitor(reportedPath, sourceFile);
     visitor.walk();
     return { path: reportedPath, methods: visitor.methods, types: visitor.types };
   }
+}
+
+/** Parse a source string with the script kind its extension implies (TS when unknown). */
+export function parseSourceFile(source: string, reportedPath: string): ts.SourceFile {
+  const scriptKind = scriptKindFor(reportedPath) ?? ts.ScriptKind.TS;
+  // setParentNodes=true: the visitor relies on .parent for else-if chain
+  // detection, boolean-run collapse, and binding-name resolution.
+  return ts.createSourceFile(reportedPath, source, ts.ScriptTarget.Latest, /* setParentNodes */ true, scriptKind);
 }

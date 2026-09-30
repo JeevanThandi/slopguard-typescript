@@ -221,7 +221,8 @@ interface ResolvedCoverage {
   cleanup: () => Promise<void>;
 }
 
-async function loadCoverageIndex(coverageJsonPath: string): Promise<CoverageIndex> {
+/** Read and index an istanbul `coverage-final.json`. */
+export async function loadCoverageIndex(coverageJsonPath: string): Promise<CoverageIndex> {
   let text: string;
   try {
     text = await readFile(coverageJsonPath, "utf8");

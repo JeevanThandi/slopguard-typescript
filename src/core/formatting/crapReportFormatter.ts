@@ -119,7 +119,7 @@ function topMethodsByCrap(report: CrapReport, topN: number): string {
 }
 
 /** JSON.stringify with lexicographically sorted keys at every level. */
-function stableStringify(value: unknown, indent: number): string {
+export function stableStringify(value: unknown, indent: number): string {
   const sortKeys = (v: unknown): unknown => {
     if (Array.isArray(v)) return v.map(sortKeys);
     if (v !== null && typeof v === "object") {

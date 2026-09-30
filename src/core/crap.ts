@@ -60,7 +60,7 @@ export function aggregateCrap(scores: Iterable<number>): CrapAggregate {
   let count = 0;
   for (const s of scores) {
     sum += s;
-    if (s > max) max = s;
+    if (s > max) max = s; // slopguard-ignore-mutant(boundary): assigning an equal max changes nothing
     count += 1;
   }
   return { sum, max, methodCount: count };

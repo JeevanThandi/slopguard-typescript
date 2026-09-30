@@ -98,7 +98,7 @@ describe("CLI end-to-end", () => {
 
   it.skipIf(!fs.existsSync(cli))("prints version metadata as JSON", async () => {
     const { stdout } = await exec(process.execPath, [cli, "version"]);
-    expect(JSON.parse(stdout)).toEqual({ name: "slopguard-typescript", version: "0.1.0" });
+    expect(JSON.parse(stdout)).toEqual({ name: "slopguard-typescript", version: "0.2.0" });
   });
 
   // Regression: `npm link` / global installs invoke the CLI through a symlink.
@@ -111,7 +111,7 @@ describe("CLI end-to-end", () => {
     try {
       fs.symlinkSync(cli, link);
       const { stdout } = await exec(process.execPath, [link, "version"]);
-      expect(JSON.parse(stdout)).toEqual({ name: "slopguard-typescript", version: "0.1.0" });
+      expect(JSON.parse(stdout)).toEqual({ name: "slopguard-typescript", version: "0.2.0" });
     } finally {
       fs.rmSync(dir, { recursive: true, force: true });
     }

@@ -64,6 +64,21 @@ jobs:
             and .summary.weightedCoverage > 95
           ' todolist-baseline.json
 
+      # Mutation baseline: the fixture's tests kill every mutant its source
+      # yields. A survivor means the generator changed or a fixture test lost
+      # an assertion.
+      - name: Mutation baseline — sample-apps/todo-list
+        run: |
+          node dist/cli/main.js mutate --path sample-apps/todo-list/src --json --quiet > todolist-mutation.json
+          jq -e '
+            .reportType == "mutation"
+            and .coverageAvailable == true
+            and .summary.mutantCount == 7
+            and .summary.killed == 7
+            and .summary.survived == 0
+            and .summary.mutationScore == 100
+          ' todolist-mutation.json
+
       - name: Upload self-analysis
         if: matrix.node == '20'
         uses: actions/upload-artifact@v4
@@ -72,4 +87,5 @@ jobs:
           path: |
             slopguard-self.json
             todolist-baseline.json
+            todolist-mutation.json
           if-no-files-found: error

@@ -21,6 +21,9 @@ export type SlopguardErrorCode =
   | "coverage_decode_failed"
   | "invalid_argument"
   | "unsupported"
+  | "baseline_failed"
+  | "mutation_in_progress"
+  | "restore_failed"
   | "internal_error";
 
 /**
@@ -80,11 +83,12 @@ export class SlopguardError extends Error {
     );
   }
 
+  /** Only `--runner` helps `mutate`, which always runs the tests. The other two escape hatches work for `analyze` only. */
   static runnerNotDetected(projectDirectory: string): SlopguardError {
     return new SlopguardError(
       "runner_not_detected",
       `No supported test runner (vitest, jest) was detected under ${projectDirectory}. ` +
-        `Pass --runner <vitest|jest>, --coverage-file <coverage-final.json>, or --no-coverage.`
+        `Pass --runner <vitest|jest>. For analyze, --coverage-file <coverage-final.json> or --no-coverage also works.`
     );
   }
 
@@ -105,6 +109,28 @@ export class SlopguardError extends Error {
 
   static unsupported(reason: string): SlopguardError {
     return new SlopguardError("unsupported", `Unsupported: ${reason}`);
+  }
+
+  /** `mutate` needs a green suite: with failing tests every mutant would look killed. */
+  static baselineFailed(exitCode: number | null, output: string): SlopguardError {
+    return new SlopguardError(
+      "baseline_failed",
+      `The test suite fails without any mutation (exit ${exitCode ?? "unknown"}). Fix the failing tests first: ${output}`
+    );
+  }
+
+  static mutationInProgress(pid: number, projectRoot: string): SlopguardError {
+    return new SlopguardError(
+      "mutation_in_progress",
+      `Another slopguard mutate run (pid ${pid}) is using ${projectRoot}.`
+    );
+  }
+
+  static restoreFailed(path: string, backupPath: string, underlying: string): SlopguardError {
+    return new SlopguardError(
+      "restore_failed",
+      `Could not restore ${path} after mutation: ${underlying}. The original is saved at ${backupPath}.`
+    );
   }
 }
 

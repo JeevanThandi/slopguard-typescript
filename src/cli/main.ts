@@ -4,6 +4,7 @@ import { pathToFileURL } from "node:url";
 import { Command } from "commander";
 import { SlopguardVersion } from "../core/version.js";
 import { makeAnalyzeCommand } from "./analyze.js";
+import { makeMutateCommand } from "./mutate.js";
 
 /**
  * Build the top-level CLI program. `analyze` is the default subcommand and
@@ -20,12 +21,14 @@ export function buildProgram(): Command {
         "slopguard-ts finds complex, undertested code by combining cyclomatic and\n" +
         "cognitive complexity (parsed via the TypeScript compiler) with line coverage\n" +
         "gathered from the project's own test runner (vitest / jest). Use `analyze`\n" +
-        "for one-shot scans and pipe `--json` into `jq` for downstream tooling.\n\n" +
+        "for one-shot scans and pipe `--json` into `jq` for downstream tooling.\n" +
+        "Use `mutate` to check that the tests catch changes to the code.\n\n" +
         "Formula:  wCRAP(m) = (cyc × cog) × (1 − cov/100)³ + sqrt(cyc × cog)\n" +
         "Default crappy threshold: 30."
     )
     .version(SlopguardVersion.version)
-    .addCommand(makeAnalyzeCommand(), { isDefault: true });
+    .addCommand(makeAnalyzeCommand(), { isDefault: true })
+    .addCommand(makeMutateCommand());
 
   program
     .command("version")

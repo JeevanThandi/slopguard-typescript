@@ -56,6 +56,14 @@ describe("TodoStore", () => {
     expect(store.remaining).toBe(1);
   });
 
+  it("counts only the todos that are not completed as remaining", () => {
+    const store = new TodoStore();
+    store.add("a");
+    store.add("b");
+    store.toggle(store.add("c").id);
+    expect(store.remaining).toBe(2);
+  });
+
   it("removes by id", () => {
     const store = new TodoStore();
     const todo = store.add("a");

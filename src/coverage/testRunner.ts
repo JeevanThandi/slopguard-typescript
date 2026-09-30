@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { SlopguardError } from "../core/errors.js";
 import { ProgressReporter } from "../core/progressReporter.js";
+import { OutputTail } from "./outputTail.js";
 import { coverageArguments, runnerBinary, RunnerKind } from "./runnerDetection.js";
 
 /** The slice of `child_process.spawn` this runner uses. Injectable for tests. */
@@ -13,6 +14,10 @@ export interface TestRunOutcome {
   coverageJsonPath: string | null;
   /** Whether the test suite itself passed. Test failures don't abort — partial coverage is still useful. */
   testsPassed: boolean;
+  /** The runner's exit code. */
+  exitCode: number;
+  /** Bounded tail of the runner's combined stdout/stderr, for error messages. */
+  outputTail: string;
 }
 
 /**
@@ -60,10 +65,10 @@ export class TestRunner {
     const produced = fs.existsSync(coverageJsonPath);
 
     if (exitCode === 0) {
-      return { coverageJsonPath: produced ? coverageJsonPath : null, testsPassed: true };
+      return { coverageJsonPath: produced ? coverageJsonPath : null, testsPassed: true, exitCode, outputTail };
     }
     if (produced) {
-      return { coverageJsonPath, testsPassed: false };
+      return { coverageJsonPath, testsPassed: false, exitCode, outputTail };
     }
     throw SlopguardError.testRunFailed(exitCode, outputTail.trim() || "no output captured");
   }
@@ -93,16 +98,10 @@ export class TestRunner {
       // --verbose. Either way the pipes must be drained or the subprocess
       // blocks once its kernel buffer fills. Keep a bounded tail for error
       // reporting.
-      const tail: Buffer[] = [];
-      let tailBytes = 0;
-      const TAIL_LIMIT = 8 * 1024;
+      const tail = new OutputTail();
       const onChunk = (chunk: Buffer) => {
         progress.raw(chunk);
         tail.push(chunk);
-        tailBytes += chunk.length;
-        while (tail.length > 1 && tailBytes > TAIL_LIMIT) {
-          tailBytes -= tail.shift()!.length;
-        }
       };
       child.stdout!.on("data", onChunk);
       child.stderr!.on("data", onChunk);
@@ -111,7 +110,7 @@ export class TestRunner {
         reject(SlopguardError.runnerUnavailable(`could not launch ${binary}: ${String(error)}`));
       });
       child.on("close", (code) => {
-        resolve({ exitCode: code ?? 1, outputTail: Buffer.concat(tail).toString("utf8") });
+        resolve({ exitCode: code ?? 1, outputTail: tail.text() });
       });
     });
   }

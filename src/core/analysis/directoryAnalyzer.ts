@@ -65,6 +65,13 @@ export function defaultAnalysisOptions(): AnalysisOptions {
   return { includeGlobs: [], excludeGlobs: [...DEFAULT_EXCLUDE_GLOBS] };
 }
 
+/** A source file selected by a directory walk. */
+export interface SourceFileRef {
+  readonly absolutePath: string;
+  /** Path relative to the walk root (forward-slash, no leading `./`). */
+  readonly relativePath: string;
+}
+
 /** Walks a directory tree and analyzes every analyzable source file it finds. */
 export class DirectoryAnalyzer {
   private readonly analyzer: FileAnalyzer;
@@ -78,12 +85,20 @@ export class DirectoryAnalyzer {
    * the path *relative to* `root` (forward-slash, no leading `./`).
    */
   async analyze(root: string, options: AnalysisOptions = defaultAnalysisOptions()): Promise<FileReport[]> {
+    const files = await this.listFiles(root, options);
+    return Promise.all(files.map((f) => this.analyzer.analyzeFile(f.absolutePath, f.relativePath)));
+  }
+
+  /**
+   * The files an analysis of `root` covers, sorted by relative path. `mutate`
+   * walks the same selection, so both commands honour the same
+   * include/exclude rules.
+   */
+  async listFiles(root: string, options: AnalysisOptions = defaultAnalysisOptions()): Promise<SourceFileRef[]> {
     const { files, rootPrefix } = await this.resolveFileSet(root, options);
-    const reports = await Promise.all(
-      files.map((file) => this.analyzer.analyzeFile(file, relativize(file, rootPrefix)))
-    );
+    const refs = files.map((file) => ({ absolutePath: file, relativePath: relativize(file, rootPrefix) }));
     /* v8 ignore next -- the `0` tiebreaker can't fire: file paths in a listing are unique */
-    return reports.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
+    return refs.sort((a, b) => (a.relativePath < b.relativePath ? -1 : a.relativePath > b.relativePath ? 1 : 0));
   }
 
   private async resolveFileSet(
